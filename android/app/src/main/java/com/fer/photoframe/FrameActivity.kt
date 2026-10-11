@@ -1,0 +1,302 @@
+package com.fer.photoframe
+
+import android.content.Intent
+import android.content.IntentFilter
+import android.graphics.drawable.Drawable
+import android.os.BatteryManager
+import android.os.Bundle
+import android.util.Log
+import android.view.View
+import android.view.WindowManager
+import android.widget.ImageView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import coil.imageLoader
+import coil.request.ImageRequest
+import com.fer.photoframe.databinding.ActivityFrameBinding
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+class FrameActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityFrameBinding
+    private lateinit var app: FrameApp
+    private lateinit var playlist: Playlist
+
+    private var settings = Settings()
+    /** Which of the two ImageViews is currently on top and visible. */
+    private var showingA = true
+    private var skipRequested = false
+    private var loopJob: Job? = null
+
+    private val dateFormat = SimpleDateFormat("EEEE d MMMM", Locale.getDefault())
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        app = application as FrameApp
+        binding = ActivityFrameBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        if (BuildConfig.FRAME_BASE_URL.isBlank()) {
+            showStatus("No FRAME_BASE_URL baked in.\nSee android/local.properties.")
+            return
+        }
+
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        goImmersive()
+
+        settings = app.prefs.settings
+        playlist = Playlist(app.prefs).apply { restore() }
+
+        Schedule.apply(this, settings)
+        SyncWorker.enqueue(this)
+
+        startLoop()
+        startPolling()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        goImmersive()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) goImmersive()
+    }
+
+    /** Sticky immersive: no status bar, no nav bar, and it comes back after a stray tap. */
+    @Suppress("DEPRECATION")
+    private fun goImmersive() {
+        window.decorView.systemUiVisibility =
+            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_FULLSCREEN
+    }
+
+    // ---------------------------------------------------------------- main loop
+
+    private fun startLoop() {
+        loopJob?.cancel()
+        loopJob = lifecycleScope.launch {
+            // Pull the manifest once up front so a fresh install has something to
+            // show without waiting for the 30-minute worker.
+            refreshManifest()
+
+            if (playlist.size == 0) {
+                showStatus("No photos yet.\nAdd some to the Drive folder.")
+            }
+
+            while (isActive) {
+                val item = playlist.current() ?: playlist.advance()
+                if (item == null) {
+                    delay(30_000)
+                    refreshManifest()
+                    continue
+                }
+
+                hideStatus()
+                val shown = show(item)
+                heartbeat(item)
+
+                // A video advances when it ends; a photo after the interval.
+                val dwellMs = if (shown && item.isVideo) {
+                    (item.durationMs ?: 15_000L).coerceAtMost(120_000L)
+                } else {
+                    settings.intervalSec * 1000L
+                }
+
+                waitOrSkip(if (shown) dwellMs else 0L)
+                playlist.advance()
+            }
+        }
+    }
+
+    /** Sleeps in short slices so a skip command lands quickly. */
+    private suspend fun waitOrSkip(ms: Long) {
+        var waited = 0L
+        while (waited < ms) {
+            if (skipRequested) {
+                skipRequested = false
+                return
+            }
+            delay(250)
+            waited += 250
+        }
+    }
+
+    // ------------------------------------------------------------------ display
+
+    /** Returns false when the item could not be displayed and should be skipped. */
+    private suspend fun show(item: Item): Boolean {
+        return if (item.isVideo) showVideo(item) else { showPhoto(item); true }
+    }
+
+    private suspend fun showPhoto(item: Item) {
+        binding.video.visibility = View.GONE
+
+        val incoming: ImageView = if (showingA) binding.photoB else binding.photoA
+        val outgoing: ImageView = if (showingA) binding.photoA else binding.photoB
+
+        val drawable = load(app.api.mediaUrl(item))
+        if (drawable == null) {
+            Log.w(TAG, "could not load ${item.id}")
+            return
+        }
+        incoming.setImageDrawable(drawable)
+
+        // Landscape photos letterbox on a portrait screen, so fill the gap with the
+        // tiny blurred backdrop stretched up. No on-device blur needed.
+        if (item.needsBackdrop) {
+            load(app.api.backdropUrl(item))?.let { binding.backdrop.setImageDrawable(it) }
+            binding.backdrop.visibility = View.VISIBLE
+        } else {
+            binding.backdrop.visibility = View.INVISIBLE
+        }
+
+        setCaption(item)
+
+        val ms = settings.transitionMs.toLong()
+        incoming.animate().alpha(1f).setDuration(ms).start()
+        outgoing.animate().alpha(0f).setDuration(ms).start()
+        showingA = !showingA
+
+        if (settings.kenBurns) kenBurns(incoming, settings.intervalSec * 1000L)
+
+        // Prefetch exactly one ahead: at ~9MB per decoded bitmap, a deeper queue
+        // would be reckless on 2GB of RAM.
+        playlist.peekNext()?.let { next ->
+            if (!next.isVideo) prefetch(app.api.mediaUrl(next))
+        }
+    }
+
+    /** A very slow drift. Optional, because continuous animation can jank on an Adreno 320. */
+    private fun kenBurns(view: ImageView, durationMs: Long) {
+        view.scaleX = 1f
+        view.scaleY = 1f
+        view.animate()
+            .scaleX(1.08f)
+            .scaleY(1.08f)
+            .setDuration(durationMs)
+            .start()
+    }
+
+    private suspend fun showVideo(item: Item): Boolean {
+        setCaption(item)
+        binding.backdrop.visibility = View.INVISIBLE
+        binding.video.visibility = View.VISIBLE
+        binding.photoA.animate().alpha(0f).setDuration(300).start()
+        binding.photoB.animate().alpha(0f).setDuration(300).start()
+
+        // No HEVC decoder on this hardware, so some clips simply will not start.
+        // Give up quickly rather than leaving a black screen on the wall.
+        val started = withTimeoutOrNull(3_000L) {
+            val ready = kotlinx.coroutines.CompletableDeferred<Boolean>()
+            binding.video.setOnPreparedListener { mp ->
+                mp.isLooping = false
+                mp.setVolume(0f, 0f)
+                ready.complete(true)
+            }
+            binding.video.setOnErrorListener { _, what, extra ->
+                Log.w(TAG, "video ${item.id} failed: what=$what extra=$extra")
+                ready.complete(false)
+                true
+            }
+            binding.video.setVideoPath(app.api.videoUrl(item))
+            binding.video.start()
+            ready.await()
+        }
+
+        if (started != true) {
+            binding.video.visibility = View.GONE
+            return false
+        }
+        return true
+    }
+
+    private fun setCaption(item: Item) {
+        binding.caption.visibility =
+            if (settings.showCaption && item.caption.isNotBlank()) View.VISIBLE else View.GONE
+        binding.caption.text = item.caption
+
+        binding.date.visibility = if (settings.showDate) View.VISIBLE else View.GONE
+        binding.date.text = dateFormat.format(Date())
+    }
+
+    private suspend fun load(url: String): Drawable? {
+        val req = ImageRequest.Builder(this).data(url).build()
+        return imageLoader.execute(req).drawable
+    }
+
+    private fun prefetch(url: String) {
+        imageLoader.enqueue(ImageRequest.Builder(this).data(url).build())
+    }
+
+    // ---------------------------------------------------------------- backend
+
+    private suspend fun refreshManifest() {
+        val manifest = app.api.manifest() ?: return
+        settings = manifest.settings
+        app.prefs.settings = manifest.settings
+        if (manifest.version != app.prefs.manifestVersion) {
+            app.prefs.manifestVersion = manifest.version
+            playlist.update(manifest.items)
+        }
+    }
+
+    /** Polls for admin commands and settings changes every 10s. */
+    private fun startPolling() {
+        lifecycleScope.launch {
+            while (isActive) {
+                delay(10_000)
+                val result = app.api.poll() ?: continue
+                val (commands, newSettings) = result
+
+                if (newSettings != settings) {
+                    settings = newSettings
+                    app.prefs.settings = newSettings
+                    Schedule.apply(this@FrameActivity, newSettings)
+                }
+
+                for (cmd in commands) {
+                    Log.i(TAG, "command: $cmd")
+                    when (cmd) {
+                        "skip" -> skipRequested = true
+                        "resync" -> { refreshManifest(); skipRequested = true }
+                        "reload" -> { startLoop(); }
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun heartbeat(item: Item) {
+        val level = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            ?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        app.api.heartbeat(item.id, level, BuildConfig.VERSION_NAME)
+    }
+
+    // ----------------------------------------------------------------- status
+
+    private fun showStatus(text: String) {
+        binding.status.visibility = View.VISIBLE
+        binding.status.text = text
+    }
+
+    private fun hideStatus() {
+        binding.status.visibility = View.GONE
+    }
+
+    private companion object {
+        const val TAG = "PhotoFrame"
+    }
+}

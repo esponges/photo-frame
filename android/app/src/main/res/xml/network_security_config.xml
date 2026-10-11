@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Trust the system store plus a bundled copy of ISRG Root X1.
+
+  Android only gained ISRG Root X1 in 7.1.1, and Let's Encrypt stopped serving the
+  old DST Root CA X3 cross-signed chain in June 2024. Bundling the root means the
+  app keeps working on an older ROM and if the backend ever moves to a Vercel
+  custom domain (which uses Let's Encrypt, unlike *.vercel.app).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="@raw/isrg_root_x1" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

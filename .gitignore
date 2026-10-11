@@ -1,0 +1,12 @@
+node_modules/
+.next/
+.env
+.env.local
+*.apk
+.DS_Store
+service-account*.json
+local.properties
+.gradle/
+build/
+tsconfig.tsbuildinfo
+*.tsbuildinfo
