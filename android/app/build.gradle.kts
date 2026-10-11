@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -16,10 +18,26 @@ android {
         versionCode = 1
         versionName = "0.1"
 
-        // Set FRAME_BASE_URL and FRAME_TOKEN in android/local.properties
-        // (gitignored) or pass -PframeBaseUrl=... -PframeToken=... on the CLI.
-        val baseUrl = (project.findProperty("frameBaseUrl") as String?) ?: ""
-        val token = (project.findProperty("frameToken") as String?) ?: ""
+        // Set frameBaseUrl / frameToken in android/local.properties (gitignored),
+        // or override with -PframeBaseUrl=... -PframeToken=... on the CLI.
+        //
+        // local.properties must be read explicitly: Gradle only auto-loads
+        // gradle.properties, and the Android plugin reads local.properties for
+        // sdk.dir alone. findProperty() alone silently yields "".
+        val localProps = Properties().apply {
+            val f = rootProject.file("local.properties")
+            if (f.exists()) f.inputStream().use { load(it) }
+        }
+        fun frameProp(name: String): String =
+            (project.findProperty(name) as String?)
+                ?: localProps.getProperty(name)
+                ?: ""
+
+        val baseUrl = frameProp("frameBaseUrl")
+        val token = frameProp("frameToken")
+        if (baseUrl.isBlank()) {
+            logger.warn("WARNING: frameBaseUrl is not set; the app will show a setup message.")
+        }
         buildConfigField("String", "FRAME_BASE_URL", "\"$baseUrl\"")
         buildConfigField("String", "FRAME_TOKEN", "\"$token\"")
     }
