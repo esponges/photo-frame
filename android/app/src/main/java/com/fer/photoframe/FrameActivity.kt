@@ -48,7 +48,16 @@ class FrameActivity : AppCompatActivity() {
             return
         }
 
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // The scheduled wake (KEYCODE_WAKEUP) brings the keyguard up over whatever was
+        // showing. These flags put the frame above it and dismiss a non-secure one, so
+        // the 07:00 wake lands on a photo instead of a lock screen.
+        @Suppress("DEPRECATION")
+        window.addFlags(
+            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON,
+        )
         goImmersive()
 
         settings = app.prefs.settings
