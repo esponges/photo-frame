@@ -69,7 +69,13 @@ function redisBackend(redis: Redis): Backend {
 }
 
 function memoryBackend(): Backend {
-  let settings: Settings = { ...DEFAULT_SETTINGS };
+  // FIXTURE_INTERVAL_SEC shortens the photo dwell so a full cycle fits in a minute
+  // when testing on the tablet. It only affects this dev-only store.
+  const quick = Number(process.env.FIXTURE_INTERVAL_SEC);
+  let settings: Settings = {
+    ...DEFAULT_SETTINGS,
+    ...(quick > 0 ? { intervalSec: quick, transitionMs: 600 } : {}),
+  };
   const hidden = new Set<string>();
   let commands: Command[] = [];
   let heartbeat: Heartbeat | null = null;

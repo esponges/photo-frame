@@ -12,6 +12,17 @@
     android:background="@android:color/black"
     android:keepScreenOn="true">
 
+    <!-- Bottom of the stack on purpose: a video's surface punches a hole through
+         everything drawn before it, so with the photos above it the previous photo
+         stays on screen while a clip prepares, and is only faded out once the clip
+         is really advancing. -->
+    <VideoView
+        android:id="@+id/video"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
     <ImageView
         android:id="@+id/backdrop"
         android:layout_width="match_parent"
@@ -33,13 +44,6 @@
         android:alpha="0"
         android:contentDescription="@null"
         android:scaleType="fitCenter" />
-
-    <VideoView
-        android:id="@+id/video"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="center"
-        android:visibility="gone" />
 
     <LinearLayout
         android:layout_width="match_parent"

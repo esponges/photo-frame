@@ -121,9 +121,14 @@ Where an item was verified on the real device, the evidence is noted.
       keyguard covering the frame. The real alarm has not been observed firing yet)
 - [ ] 8.11 Add a photo to Drive and confirm it appears within one sync interval
 - [x] 8.12 Add an H.264 clip and confirm it plays muted and advances
-      (1080x1920 clip started in ~2.6s and advanced after ~10s; muted via setVolume(0))
-- [ ] 8.13 Add an HEVC clip and confirm it is skipped rather than showing black
-      (skip path seen when a video could not load offline; no HEVC clip in Drive yet)
+      (verified with the 1280x720 H.264 fixture clip: the player position advanced and
+      the item moved on; muted via setVolume(0). The clip in Drive turned out to be
+      HEVC, not H.264, so it does not count here)
+- [x] 8.13 Add an HEVC clip and confirm it is skipped rather than showing black
+      (the Drive clip is 1920x1080 HEVC Main 10: this ROM's software decoder accepts it
+      but it sits at position 0, so the app now requires the position to advance within
+      4s and otherwise skips it, keeping the previous photo on screen; 55 screenshots
+      across a cycle showed no black frame. An 8-bit 720p HEVC fixture does play.)
 - [ ] 8.14 Confirm the heartbeat and battery level appear in the admin page
 
 ## 9. Hardening and follow-ups
@@ -137,6 +142,9 @@ Where an item was verified on the real device, the evidence is noted.
       (`docs/device-notes.md`, including the root-required Wi-Fi toggle and LAN address)
 - [ ] 9.3 Decide whether uncaptioned photos should show the capture date instead
 - [ ] 9.4 Tune the dwell time and sync interval after living with it for a week
+- [ ] 9.6 Decide how to handle phone videos the tablet cannot play (10-bit / 1080p HEVC
+      is what phones record by default): re-encode before uploading, switch the phone to
+      H.264, or transcode on the backend. Today such clips are skipped after ~8s.
 - [ ] 9.5 Consider a watchdog that restarts the activity if it dies while unattended
 
 ## 10. Physical installation

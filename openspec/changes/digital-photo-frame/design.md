@@ -102,8 +102,11 @@ directly. The app bundles the root anyway, so it works on ROMs that lack it.
 - **12-year-old battery held at 100% permanently** → Most likely physical failure;
   these cells swell and crack the glass. Check condition before mounting and mount
   so a swollen cell cannot press the screen.
-- **No HEVC decoder** → Some clips cannot play. Mitigated by a 10-second
-  skip-on-failure guard rather than transcoding.
+- **Weak video decoding** → There is no hardware HEVC decoder, and the ROM's software
+  one accepts clips it cannot play in real time (a 10-bit 1080p phone clip prepares, then
+  sits at position 0 on black). It does not error, so a start timeout is not enough:
+  playback must also be seen to advance within 4 seconds, otherwise the clip is skipped
+  with the previous photo left on screen. No transcoding.
 - **Memory pressure on 2GB** → Prefetch is capped at one photo ahead and the memory
   cache at ~48MB.
 - **Single point of failure in the backend** → Mitigated by caching the entire

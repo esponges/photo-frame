@@ -205,11 +205,10 @@ class FrameActivity : AppCompatActivity() {
     }
 
     private suspend fun showVideo(item: Item): Boolean {
-        setCaption(item)
-        binding.backdrop.visibility = View.INVISIBLE
+        // The video view sits under the photos (see the layout), so the previous photo
+        // stays up until the clip is confirmed playing; a clip that cannot play never
+        // blanks the frame.
         binding.video.visibility = View.VISIBLE
-        binding.photoA.animate().alpha(0f).setDuration(300).start()
-        binding.photoB.animate().alpha(0f).setDuration(300).start()
 
         // No HEVC decoder on this hardware, so some clips simply will not start. An
         // undecodable clip errors out immediately, so this only has to catch hangs;
@@ -237,6 +236,25 @@ class FrameActivity : AppCompatActivity() {
             binding.video.visibility = View.GONE
             return false
         }
+        // Starting is not playing. This ROM ships a software HEVC decoder (FFmpeg), so a
+        // 10-bit 1080p phone clip prepares without error and then sits at position 0 on
+        // black ("buffer low, pausing") for its whole length. Require the position to
+        // actually move, and skip the clip if it does not.
+        val advancing = withTimeoutOrNull(VIDEO_PROGRESS_TIMEOUT_MS) {
+            while (binding.video.currentPosition < MIN_VIDEO_PROGRESS_MS) delay(200)
+            true
+        }
+        if (advancing != true) {
+            Log.w(TAG, "video ${item.id.take(6)} prepared but is not advancing; skipping")
+            binding.video.stopPlayback()
+            binding.video.visibility = View.GONE
+            return false
+        }
+
+        setCaption(item)
+        binding.backdrop.visibility = View.INVISIBLE
+        binding.photoA.animate().alpha(0f).setDuration(300).start()
+        binding.photoB.animate().alpha(0f).setDuration(300).start()
         return true
     }
 
@@ -320,5 +338,7 @@ class FrameActivity : AppCompatActivity() {
     private companion object {
         const val TAG = "PhotoFrame"
         const val VIDEO_START_TIMEOUT_MS = 10_000L
+        const val VIDEO_PROGRESS_TIMEOUT_MS = 4_000L
+        const val MIN_VIDEO_PROGRESS_MS = 300
     }
 }

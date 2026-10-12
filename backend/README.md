@@ -55,6 +55,9 @@ and (if present) H.264 and HEVC clips. Only `FRAME_TOKEN` and `ADMIN_PASSWORD` a
     cd ../android && ./gradlew :app:assembleDebug \
         -PframeBaseUrl=http://127.0.0.1:3000 -PframeToken=$FRAME_TOKEN
 
+Add `FIXTURE_INTERVAL_SEC=8` to the dev server to shorten the photo dwell (in-memory
+store only) so a full photo-and-video cycle takes about a minute.
+
 The debug build (only) allows cleartext to `127.0.0.1`/`localhost`; release stays
 HTTPS-only. Fixture mode never touches Drive, so it cannot prove the service-account
 sharing, TLS to the deployed backend, or real-world EXIF.
