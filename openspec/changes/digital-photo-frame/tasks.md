@@ -93,8 +93,8 @@ Where an item was verified on the real device, the evidence is noted.
 - [x] 7.7 Provision Upstash Redis (`vercel integration add upstash`) so settings and (provisioned; an /admin settings change persists and is served by the production
       manifest; no error-level function logs after real use)
       hidden photos survive restarts
-- [ ] 7.8 Rebuild the APK with the real `frameBaseUrl`/`frameToken` and reinstall
-      (built with the production values; not yet installed on the tablet)
+- [x] 7.8 Rebuild the APK with the real `frameBaseUrl`/`frameToken` and reinstall
+      (production URL and token baked in; installed on the tablet and running)
 
 ## 8. End-to-end verification on the device
 
