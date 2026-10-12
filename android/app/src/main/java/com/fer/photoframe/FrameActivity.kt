@@ -5,6 +5,7 @@ import android.content.IntentFilter
 import android.graphics.drawable.Drawable
 import android.os.BatteryManager
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
@@ -114,8 +115,12 @@ class FrameActivity : AppCompatActivity() {
                 }
 
                 hideStatus()
+                val t0 = SystemClock.elapsedRealtime()
                 val shown = show(item)
-                heartbeat(item)
+                Log.i(TAG, "item ${item.id.take(6)} ${item.kind} shown=$shown show=${SystemClock.elapsedRealtime() - t0}ms")
+                // Not awaited: the first call after the network drops waits out the 30s
+                // read timeout on a dead pooled socket, which would stall the next photo.
+                lifecycleScope.launch { heartbeat(item) }
 
                 // A video advances when it ends; a photo after the interval.
                 val dwellMs = if (shown && item.isVideo) {

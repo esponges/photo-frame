@@ -74,8 +74,16 @@ class Playlist(
         return removed || added.isNotEmpty()
     }
 
-    private fun reshuffle() {
+    /**
+     * @param avoidFirst the item just shown, so a wrap into the next cycle never
+     * opens with an immediate repeat (likely with only a handful of items).
+     */
+    private fun reshuffle(avoidFirst: String? = null) {
         queue = items.map { it.id }.shuffled(random).toMutableList()
+        if (avoidFirst != null && queue.size > 1 && queue[0] == avoidFirst) {
+            val swapWith = 1 + random.nextInt(queue.size - 1)
+            queue[0] = queue[swapWith].also { queue[swapWith] = queue[0] }
+        }
         cursor = 0
         persist()
     }
@@ -88,7 +96,7 @@ class Playlist(
             reshuffle()
         } else {
             cursor++
-            if (cursor >= queue.size) reshuffle() else persist()
+            if (cursor >= queue.size) reshuffle(avoidFirst = queue.lastOrNull()) else persist()
         }
         return current()
     }

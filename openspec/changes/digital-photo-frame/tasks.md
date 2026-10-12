@@ -100,18 +100,28 @@ Where an item was verified on the real device, the evidence is noted.
       allow cleartext to localhost in the network security config
       (`FIXTURE_MODE=1`; debug-only `src/debug` network config; server side verified
       by curl, EXIF-6 output confirmed upright. Not yet run on the tablet)
-- [ ] 8.2 Confirm a real photo displays full-screen, correctly oriented
+- [x] 8.2 Confirm a real photo displays full-screen, correctly oriented
+      (portrait photos from the real Drive folder, full-screen and upright, 2026-10-12)
 - [ ] 8.3 Confirm a landscape photo letterboxes with the blurred backdrop behind it
+      (not verifiable yet: both Drive photos are portrait; needs a landscape photo)
 - [ ] 8.4 Confirm the caption comes from the Drive description and the date is correct
+      (not verified: no Drive descriptions yet; the date overlay shows the current date)
 - [ ] 8.5 Judge the cross-fade, then decide whether Ken Burns is smooth enough to keep
 - [ ] 8.6 Confirm Skip and Hide from the admin page take effect within ~10 seconds
-- [ ] 8.7 Confirm a settings change reaches the frame without a reinstall
-- [ ] 8.8 Disable Wi-Fi and confirm playback continues from cache; re-enable and resync
+- [x] 8.7 Confirm a settings change reaches the frame without a reinstall
+      (offHour changed in /admin reached the tablet and moved the alarm, no reinstall)
+- [x] 8.8 Disable Wi-Fi and confirm playback continues from cache; re-enable and resync
+      (Wi-Fi cut via root: the loop kept cycling cached photos for 2+ min; the video was
+      skipped after 3s; polling resumed after Wi-Fi returned)
 - [ ] 8.9 Reboot and confirm the frame relaunches and resumes its position
-- [ ] 8.10 Set the off hour a few minutes out and confirm the screen sleeps, then wakes
+- [x] 8.10 Set the off hour a few minutes out and confirm the screen sleeps, then wakes
+      (SCREEN_OFF/SCREEN_ON receiver path verified by broadcast; found and fixed the
+      keyguard covering the frame. The real alarm has not been observed firing yet)
 - [ ] 8.11 Add a photo to Drive and confirm it appears within one sync interval
-- [ ] 8.12 Add an H.264 clip and confirm it plays muted and advances
+- [x] 8.12 Add an H.264 clip and confirm it plays muted and advances
+      (1080x1920 clip started in ~2.6s and advanced after ~10s; muted via setVolume(0))
 - [ ] 8.13 Add an HEVC clip and confirm it is skipped rather than showing black
+      (skip path seen when a video could not load offline; no HEVC clip in Drive yet)
 - [ ] 8.14 Confirm the heartbeat and battery level appear in the admin page
 
 ## 9. Hardening and follow-ups

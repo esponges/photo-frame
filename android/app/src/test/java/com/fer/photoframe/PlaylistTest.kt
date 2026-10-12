@@ -54,6 +54,20 @@ class PlaylistTest {
     }
 
     @Test
+    fun wrappingIntoANewCycleNeverRepeatsTheLastItem() {
+        for (n in 2..4) for (seed in 1..50) {
+            val p = playlist(seed)
+            p.update(items(n))
+            var previous = p.current()!!.id
+            repeat(n * 6) {
+                val next = p.advance()!!.id
+                assertTrue("n=$n seed=$seed repeated $next", next != previous)
+                previous = next
+            }
+        }
+    }
+
+    @Test
     fun singleItemKeepsShowingItself() {
         val p = playlist()
         p.update(items(1))
