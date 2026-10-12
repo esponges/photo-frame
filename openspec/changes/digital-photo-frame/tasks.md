@@ -87,7 +87,8 @@ Where an item was verified on the real device, the evidence is noted.
       (3 items in Drive, but none has a description yet, so captions are untested)
 - [x] 7.5 Generate `FRAME_TOKEN` (`openssl rand -hex 32`) and choose `ADMIN_PASSWORD` (64-char token; `ADMIN_PASSWORD` kept, 9 chars)
 - [x] 7.6 Deploy the backend to Vercel and set its environment variables (https://photo-frame-sandy.vercel.app)
-- [x] 7.7 Provision Upstash Redis (`vercel integration add upstash`) so settings and (provisioned; persistence across cold start still to confirm, see deploy change 4.6)
+- [x] 7.7 Provision Upstash Redis (`vercel integration add upstash`) so settings and (provisioned; an /admin settings change persists and is served by the production
+      manifest; no error-level function logs after real use)
       hidden photos survive restarts
 - [ ] 7.8 Rebuild the APK with the real `frameBaseUrl`/`frameToken` and reinstall
       (built with the production values; not yet installed on the tablet)
