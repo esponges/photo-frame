@@ -7,6 +7,8 @@ import android.os.BatteryManager
 import android.os.Bundle
 import android.os.SystemClock
 import android.util.Log
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.ImageView
@@ -23,6 +25,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
 
 class FrameActivity : AppCompatActivity() {
 
@@ -34,6 +37,25 @@ class FrameActivity : AppCompatActivity() {
     /** Which of the two ImageViews is currently on top and visible. */
     private var showingA = true
     private var skipRequested = false
+
+    /** A fast horizontal swipe anywhere on the screen skips to the next item. */
+    private val swipeToNext by lazy {
+        GestureDetector(
+            this,
+            object : GestureDetector.SimpleOnGestureListener() {
+                override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
+                    val start = e1 ?: return false
+                    val dx = e2.x - start.x
+                    val dy = e2.y - start.y
+                    val horizontal = abs(dx) >= SWIPE_MIN_DISTANCE_PX && abs(dx) > abs(dy) * 1.5f
+                    if (!horizontal || abs(vx) < SWIPE_MIN_VELOCITY) return false
+                    Log.i(TAG, "swipe: next")
+                    skipRequested = true
+                    return true
+                }
+            },
+        )
+    }
     private var loopJob: Job? = null
 
     private val dateFormat = SimpleDateFormat("EEEE d MMMM", Locale.getDefault())
@@ -74,6 +96,11 @@ class FrameActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         goImmersive()
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        swipeToNext.onTouchEvent(ev)
+        return super.dispatchTouchEvent(ev)
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -340,5 +367,7 @@ class FrameActivity : AppCompatActivity() {
         const val VIDEO_START_TIMEOUT_MS = 10_000L
         const val VIDEO_PROGRESS_TIMEOUT_MS = 4_000L
         const val MIN_VIDEO_PROGRESS_MS = 300
+        const val SWIPE_MIN_DISTANCE_PX = 150f
+        const val SWIPE_MIN_VELOCITY = 600f
     }
 }

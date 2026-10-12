@@ -144,6 +144,9 @@ Where an item was verified on the real device, the evidence is noted.
       (`docs/device-notes.md`, including the root-required Wi-Fi toggle and LAN address)
 - [ ] 9.3 Decide whether uncaptioned photos should show the capture date instead
 - [ ] 9.4 Tune the dwell time and sync interval after living with it for a week
+- [x] 9.7 Swipe left or right anywhere on the screen to skip to the next item
+      (verified on the tablet: fast horizontal swipes skip at once, vertical swipes and
+      slow short drags are ignored)
 - [ ] 9.6 Decide how to handle phone videos the tablet cannot play (10-bit / 1080p HEVC
       is what phones record by default): re-encode before uploading, switch the phone to
       H.264, or transcode on the backend. Today such clips are skipped after ~8s.
