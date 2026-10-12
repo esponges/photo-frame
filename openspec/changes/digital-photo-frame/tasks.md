@@ -60,7 +60,9 @@ Where an item was verified on the real device, the evidence is noted.
 - [x] 5.10 `SyncWorker` warming the disk cache every 30 minutes
 - [x] 5.11 Boot receiver, immersive-sticky fullscreen, keep-screen-on
 - [x] 5.12 Root helpers and the on/off schedule using SLEEP/WAKEUP, handling midnight wrap
-- [x] 5.13 Video playback muted with a 3-second skip-on-failure guard
+- [x] 5.13 Video playback muted with a 10-second skip-on-failure guard
+      (was 3s; measured start time was ~2.6s for an MP4 with its index at the end,
+      so good clips were being skipped)
 - [x] 5.14 Load `frameBaseUrl`/`frameToken` from `local.properties` explicitly, with a
       build warning when unset (`findProperty()` does not read that file)
 - [x] 5.15 Build a debug APK (5MB; CA and network config confirmed inside the archive)

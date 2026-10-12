@@ -211,9 +211,12 @@ class FrameActivity : AppCompatActivity() {
         binding.photoA.animate().alpha(0f).setDuration(300).start()
         binding.photoB.animate().alpha(0f).setDuration(300).start()
 
-        // No HEVC decoder on this hardware, so some clips simply will not start.
-        // Give up quickly rather than leaving a black screen on the wall.
-        val started = withTimeoutOrNull(3_000L) {
+        // No HEVC decoder on this hardware, so some clips simply will not start. An
+        // undecodable clip errors out immediately, so this only has to catch hangs;
+        // it must not be tight, because an MP4 with its index at the end of the file
+        // needs several sequential range requests (~1s each through the proxy) before
+        // it can start. 3s was measured to sit right at that edge and skipped good clips.
+        val started = withTimeoutOrNull(VIDEO_START_TIMEOUT_MS) {
             val ready = kotlinx.coroutines.CompletableDeferred<Boolean>()
             binding.video.setOnPreparedListener { mp ->
                 mp.isLooping = false
@@ -316,5 +319,6 @@ class FrameActivity : AppCompatActivity() {
 
     private companion object {
         const val TAG = "PhotoFrame"
+        const val VIDEO_START_TIMEOUT_MS = 10_000L
     }
 }

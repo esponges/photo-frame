@@ -97,7 +97,7 @@ because the device has no HEVC decoder.
 - **THEN** it SHALL play muted and advance when it ends
 
 #### Scenario: Undecodable clip
-- **WHEN** a clip does not begin playing within 3 seconds
+- **WHEN** a clip does not begin playing within 10 seconds
 - **THEN** the frame SHALL advance rather than display a black screen
 
 #### Scenario: Offline

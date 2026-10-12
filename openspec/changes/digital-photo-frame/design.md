@@ -102,7 +102,7 @@ directly. The app bundles the root anyway, so it works on ROMs that lack it.
 - **12-year-old battery held at 100% permanently** → Most likely physical failure;
   these cells swell and crack the glass. Check condition before mounting and mount
   so a swollen cell cannot press the screen.
-- **No HEVC decoder** → Some clips cannot play. Mitigated by a 3-second
+- **No HEVC decoder** → Some clips cannot play. Mitigated by a 10-second
   skip-on-failure guard rather than transcoding.
 - **Memory pressure on 2GB** → Prefetch is capped at one photo ahead and the memory
   cache at ~48MB.

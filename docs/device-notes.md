@@ -8,7 +8,8 @@ Anything not yet verified is listed at the bottom rather than guessed.
 - CyanogenMod `cm_flo` 7.1.0 build `NDE63X`, Android 7.1 (SDK 25)
 - 2GB RAM: a decoded 1200x1920 ARGB_8888 bitmap is about 9MB, so keep one ahead at most
 - Adreno 320 with **no HEVC decoder**: H.265 clips fail to start; the app skips a video
-  that has not started within 3 seconds
+  that has not started within 10 seconds (3s was too tight: an MP4 with its index at
+  the end needs several range requests and started in ~2.6s)
 - Root works (`su -c id` returns `uid=0`); the app needs it for the screen schedule
   and brightness
 
