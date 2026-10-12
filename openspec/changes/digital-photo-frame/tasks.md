@@ -115,7 +115,9 @@ Where an item was verified on the real device, the evidence is noted.
 - [x] 8.8 Disable Wi-Fi and confirm playback continues from cache; re-enable and resync
       (Wi-Fi cut via root: the loop kept cycling cached photos for 2+ min; the video was
       skipped after 3s; polling resumed after Wi-Fi returned)
-- [ ] 8.9 Reboot and confirm the frame relaunches and resumes its position
+- [x] 8.9 Reboot and confirm the frame relaunches and resumes its position
+      (rebooted: 22 min later the frame was in the foreground with no lockscreen over it,
+      cycling every ~60s, and the saved playlist (queue and cursor) had persisted)
 - [x] 8.10 Set the off hour a few minutes out and confirm the screen sleeps, then wakes
       (SCREEN_OFF/SCREEN_ON receiver path verified by broadcast; found and fixed the
       keyguard covering the frame. The real alarm has not been observed firing yet)
