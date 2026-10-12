@@ -128,3 +128,17 @@ export function store(): Backend {
   }
   return backend;
 }
+
+/**
+ * A raw Redis client for blob-ish values (converted videos), or null in the in-memory
+ * dev setup. Deserialisation is off so a base64 string is never mistaken for JSON.
+ */
+let rawRedis: Redis | null | undefined;
+export function rawRedisClient(): Redis | null {
+  if (rawRedis === undefined) {
+    const url = process.env.KV_REST_API_URL;
+    const token = process.env.KV_REST_API_TOKEN;
+    rawRedis = url && token ? new Redis({ url, token, automaticDeserialization: false }) : null;
+  }
+  return rawRedis;
+}

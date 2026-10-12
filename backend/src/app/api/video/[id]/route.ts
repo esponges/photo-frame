@@ -1,15 +1,19 @@
 import { isAdmin, isFrame, isFrameToken, unauthorized } from "@/lib/auth";
-import { fetchFile } from "@/lib/drive";
+import { fetchFile, fileMd5 } from "@/lib/drive";
+import { playableVideo, serveFile } from "@/lib/video";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// The first request for a clip that needs converting waits for the conversion.
+export const maxDuration = 60;
 
 /**
- * Range-proxies a video straight from Drive. Deliberately never cached: videos are
- * streamed on demand and simply skipped when the frame is offline.
+ * Serves a video the tablet can play, with Range support. Plain H.264 passes through;
+ * HEVC / 10-bit / oversized clips are converted once and cached (see lib/video.ts).
+ * Never cached by the browser or CDN, and simply skipped when the frame is offline.
  *
- * No transcoding — the Nexus 7's Adreno 320 has no HEVC decoder, so H.265 clips
- * will fail to start and the device skips them after a short timeout.
+ * If conversion is impossible (no ffmpeg, no checksum) it falls back to proxying the
+ * original bytes, which the device's progress check will skip if it cannot play them.
  */
 export async function GET(
   req: Request,
@@ -23,6 +27,14 @@ export async function GET(
 
   const { id } = await ctx.params;
   const range = req.headers.get("range");
+
+  try {
+    const md5 = await fileMd5(id);
+    if (md5) return serveFile(await playableVideo(id, md5), range);
+  } catch (err) {
+    console.error(`[video] ${id} conversion failed, proxying the original:`, err);
+  }
+
   const upstream = await fetchFile(id, range);
 
   if (!upstream.ok && upstream.status !== 206) {

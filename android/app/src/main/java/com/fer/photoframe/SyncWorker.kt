@@ -29,6 +29,9 @@ class SyncWorker(appContext: Context, params: WorkerParameters) :
         app.prefs.manifestVersion = manifest.version
         Schedule.apply(applicationContext, manifest.settings)
 
+        // Have the server convert and cache each video now, so the first play is quick.
+        manifest.items.filter { it.isVideo }.forEach { app.api.warmVideo(it) }
+
         // Warm the disk cache. Videos are deliberately excluded: they stream and are
         // never cached, and pulling them would blow the cache budget.
         val loader = applicationContext.imageLoader

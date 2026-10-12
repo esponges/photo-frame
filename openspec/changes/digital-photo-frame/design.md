@@ -26,7 +26,7 @@ invisible to the app. Google Drive is the source instead.
 
 **Non-Goals:**
 - Supporting any device other than this tablet
-- Video transcoding
+- General-purpose video transcoding (only clips the tablet cannot decode are converted)
 - Multi-user accounts, sharing, or a public deployment
 - Showing an existing Google Photos library directly (impossible, see Context)
 - Face detection, smart cropping, or auto-curation
@@ -106,7 +106,9 @@ directly. The app bundles the root anyway, so it works on ROMs that lack it.
   one accepts clips it cannot play in real time (a 10-bit 1080p phone clip prepares, then
   sits at position 0 on black). It does not error, so a start timeout is not enough:
   playback must also be seen to advance within 4 seconds, otherwise the clip is skipped
-  with the previous photo left on screen. No transcoding.
+  with the previous photo left on screen. The backend also converts clips the tablet
+  cannot decode (HEVC, 10-bit, oversized) to 720p baseline H.264 once and shares the
+  result through Redis, so phone videos do play.
 - **Memory pressure on 2GB** → Prefetch is capped at one photo ahead and the memory
   cache at ~48MB.
 - **Single point of failure in the backend** → Mitigated by caching the entire

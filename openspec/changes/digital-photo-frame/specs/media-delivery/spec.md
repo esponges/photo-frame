@@ -52,13 +52,23 @@ file format cannot blank the frame.
 - **WHEN** the source cannot be decoded, such as HEIC without libheif
 - **THEN** the response SHALL be HTTP 415 and the device SHALL skip the item
 
-### Requirement: Video streaming without caching
-The system SHALL range-proxy video from Drive and SHALL NOT cache it, and SHALL NOT
-transcode it.
+### Requirement: Videos the device can decode
+The system SHALL serve plain 8-bit H.264 video unchanged, and SHALL convert any other
+video (HEVC, 10-bit, larger than 1920x1080) once to 720p baseline H.264 without audio,
+tone-mapping HDR to SDR, and SHALL share the converted file between server instances.
+Neither the browser nor the CDN SHALL cache the response.
 
 #### Scenario: Ranged request
 - **WHEN** the player requests a byte range
-- **THEN** the range SHALL be forwarded upstream and `Accept-Ranges` returned
+- **THEN** the range SHALL be answered from the playable file and `Accept-Ranges` returned
+
+#### Scenario: Phone HEVC clip
+- **WHEN** a 10-bit 1080p HEVC clip is requested
+- **THEN** the response SHALL be baseline H.264 that the device can play
+
+#### Scenario: Conversion in progress elsewhere
+- **WHEN** another instance is already converting the same clip
+- **THEN** this request SHALL wait for that result instead of converting again
 
 #### Scenario: Caching policy
 - **WHEN** a video is served

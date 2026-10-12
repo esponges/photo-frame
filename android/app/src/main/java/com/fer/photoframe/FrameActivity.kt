@@ -216,7 +216,8 @@ class FrameActivity : AppCompatActivity() {
         // Prefetch exactly one ahead: at ~9MB per decoded bitmap, a deeper queue
         // would be reckless on 2GB of RAM.
         playlist.peekNext()?.let { next ->
-            if (!next.isVideo) prefetch(app.api.mediaUrl(next))
+            if (next.isVideo) lifecycleScope.launch { app.api.warmVideo(next) }
+            else prefetch(app.api.mediaUrl(next))
         }
     }
 
@@ -237,11 +238,11 @@ class FrameActivity : AppCompatActivity() {
         // blanks the frame.
         binding.video.visibility = View.VISIBLE
 
-        // No HEVC decoder on this hardware, so some clips simply will not start. An
-        // undecodable clip errors out immediately, so this only has to catch hangs;
-        // it must not be tight, because an MP4 with its index at the end of the file
-        // needs several sequential range requests (~1s each through the proxy) before
-        // it can start. 3s was measured to sit right at that edge and skipped good clips.
+        // Generous on purpose. The server may have to convert the clip first (a phone's
+        // HEVC becomes H.264) when it has gone cold, and an MP4 with its index at the end
+        // needs several sequential range requests (~1s each) before it can start. The
+        // previous photo stays on screen while this runs, so waiting costs nothing
+        // visible. 3s was measured to skip good clips.
         val started = withTimeoutOrNull(VIDEO_START_TIMEOUT_MS) {
             val ready = kotlinx.coroutines.CompletableDeferred<Boolean>()
             binding.video.setOnPreparedListener { mp ->
@@ -364,7 +365,7 @@ class FrameActivity : AppCompatActivity() {
 
     private companion object {
         const val TAG = "PhotoFrame"
-        const val VIDEO_START_TIMEOUT_MS = 10_000L
+        const val VIDEO_START_TIMEOUT_MS = 45_000L
         const val VIDEO_PROGRESS_TIMEOUT_MS = 4_000L
         const val MIN_VIDEO_PROGRESS_MS = 300
         const val SWIPE_MIN_DISTANCE_PX = 150f

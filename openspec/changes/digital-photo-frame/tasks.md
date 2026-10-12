@@ -29,7 +29,8 @@ Where an item was verified on the real device, the evidence is noted.
 - [x] 3.3 Generate the 60x96 blurred backdrop
 - [x] 3.4 Serve content-addressed URLs as `immutable`
 - [x] 3.5 Convert non-JPEG input; return HTTP 415 when undecodable
-- [x] 3.6 Range-proxy video with `no-store`, no transcoding
+- [x] 3.6 Range-proxy video with `no-store` (clips the tablet cannot decode are now
+      converted to H.264, see 9.6)
 - [x] 3.7 Accept the token as a query parameter on the video route only
 - [x] 3.8 Verify the pipeline: 4000x3000 + EXIF orientation 6 produced a 1200x1600
       portrait JPEG, backdrop 60x96 at 0.3KB
@@ -147,9 +148,13 @@ Where an item was verified on the real device, the evidence is noted.
 - [x] 9.7 Swipe left or right anywhere on the screen to skip to the next item
       (verified on the tablet: fast horizontal swipes skip at once, vertical swipes and
       slow short drags are ignored)
-- [ ] 9.6 Decide how to handle phone videos the tablet cannot play (10-bit / 1080p HEVC
-      is what phones record by default): re-encode before uploading, switch the phone to
-      H.264, or transcode on the backend. Today such clips are skipped after ~8s.
+- [x] 9.6 Phone videos the tablet cannot play (10-bit / 1080p HEVC, which phones record by
+      default): the backend converts them to 720p baseline H.264 (HDR tone-mapped, audio
+      dropped) with ffmpeg-static, caches the result in Redis in 600KB chunks (30 day TTL,
+      ~4MB per clip) behind a lock, and passes plain H.264 through. A cold conversion takes
+      ~30s on Vercel, once per clip; the app warms the next video ahead and waits up to 45s
+      with the previous photo still on screen. Verified: the real Drive clip plays on the
+      tablet. Limits: no audio, and a clip's first-ever play waits for the conversion.
 - [ ] 9.5 Consider a watchdog that restarts the activity if it dies while unattended
 
 ## 10. Physical installation

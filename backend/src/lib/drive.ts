@@ -181,3 +181,16 @@ export async function fetchFile(id: string, range?: string | null): Promise<Resp
   if (range) headers.Range = range;
   return fetch(url, { headers });
 }
+
+const md5Cache = new Map<string, { md5: string | null; at: number }>();
+
+/** Content hash of one file, or null when Drive has none (Google-native files). */
+export async function fileMd5(id: string): Promise<string | null> {
+  if (fixtureMode()) return `fixture-${id}`;
+  const hit = md5Cache.get(id);
+  if (hit && Date.now() - hit.at < 10 * 60_000) return hit.md5;
+  const res = await driveGet(`/files/${id}`, { fields: "md5Checksum" });
+  const md5 = ((await res.json()) as { md5Checksum?: string }).md5Checksum ?? null;
+  md5Cache.set(id, { md5, at: Date.now() });
+  return md5;
+}

@@ -14,8 +14,9 @@ Anything not yet verified is listed at the bottom rather than guessed.
   720p HEVC play fine. The app therefore skips a clip unless it starts within 10 seconds
   (3s was too tight: an MP4 with its index at the end needs several range requests and
   prepared in 2.6-6s) **and** its position advances within 4 more seconds.
-- Phones record HEVC (often 10-bit HDR) by default, so expect real-world clips to be
-  skipped until they are re-encoded to H.264.
+- Phones record HEVC (often 10-bit HDR) by default, so the backend converts those to
+  baseline H.264 before serving them (see `backend/src/lib/video.ts`); the tablet only
+  ever sees clips it can play.
 - Root works (`su -c id` returns `uid=0`); the app needs it for the screen schedule
   and brightness
 

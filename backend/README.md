@@ -85,6 +85,15 @@ Verify against the production URL (`$URL`):
     curl -o /dev/null -w '%{http_code}\n' $URL/api/manifest                # 401
     curl -H "Authorization: Bearer $FRAME_TOKEN" $URL/api/manifest | jq '.items | length'
 
+### Videos
+
+`/api/video/{id}` serves plain 8-bit H.264 as is. Anything else (HEVC, 10-bit HDR,
+larger than 1080p) is converted once with the bundled `ffmpeg-static` to 720p baseline
+H.264 and the result is cached in `/tmp` and, in chunks, in Redis, so every server
+instance shares one conversion (a lock stops two instances converting the same clip).
+A cold conversion takes about 30s on Vercel and about 4MB of Redis per clip. Without
+Redis (local dev) only `/tmp` is used. If conversion fails the original bytes are proxied.
+
 ## Endpoints
 
 | Route | Auth | Purpose |
