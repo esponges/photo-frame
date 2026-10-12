@@ -143,9 +143,10 @@ function toItem(f: DriveFile): Item | null {
 
   let w = meta?.width ?? 0;
   let h = meta?.height ?? 0;
-  // Drive reports pre-rotation pixel dimensions; a 90/270 rotation swaps them.
+  // Drive reports pre-rotation pixel dimensions. Its `rotation` field counts
+  // clockwise quarter-turns (0-3), not degrees, and an odd count swaps them.
   const rotation = f.imageMediaMetadata?.rotation ?? 0;
-  if (rotation === 90 || rotation === 270) [w, h] = [h, w];
+  if (rotation % 2 === 1) [w, h] = [h, w];
 
   return {
     id: f.id,

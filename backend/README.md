@@ -59,6 +59,29 @@ The debug build (only) allows cleartext to `127.0.0.1`/`localhost`; release stay
 HTTPS-only. Fixture mode never touches Drive, so it cannot prove the service-account
 sharing, TLS to the deployed backend, or real-world EXIF.
 
+## Deploy (Vercel)
+
+The project is linked from `backend/` (`.vercel/` is gitignored), so deploy from this
+directory. Leave the project's Root Directory unset while deploying with the CLI.
+
+    vercel integration add upstash/upstash-kv     # injects KV_REST_API_URL / KV_REST_API_TOKEN
+    for k in GOOGLE_SERVICE_ACCOUNT_EMAIL GOOGLE_PRIVATE_KEY DRIVE_FOLDER_ID FRAME_TOKEN ADMIN_PASSWORD; do
+      printf '%s' "$(printenv $k)" | vercel env add $k production   # after `set -a; . ./.env.local`
+    done
+    vercel env ls                                  # all five + KV_*; FIXTURE_MODE must be absent
+    vercel --prod
+
+Set every variable and the Redis integration *before* deploying: variables added later
+do not apply to an existing deployment. Without Redis the in-memory fallback is used,
+which on Vercel resets on cold starts and silently drops Skip/Hide commands.
+`GOOGLE_PRIVATE_KEY` keeps its literal `\n` sequences, as in `.env.local`.
+
+Verify against the production URL (`$URL`):
+
+    curl $URL/api/health                                                   # 200, no auth
+    curl -o /dev/null -w '%{http_code}\n' $URL/api/manifest                # 401
+    curl -H "Authorization: Bearer $FRAME_TOKEN" $URL/api/manifest | jq '.items | length'
+
 ## Endpoints
 
 | Route | Auth | Purpose |

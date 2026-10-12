@@ -15,7 +15,8 @@ Where an item was verified on the real device, the evidence is noted.
 - [x] 2.2 List media in the folder, recursing one level into subfolders
 - [x] 2.3 Read captions from each file's `description` field
 - [x] 2.4 Normalise Drive's `2019:03:04 18:12:33` EXIF time into ISO 8601
-- [x] 2.5 Swap reported width/height for 90/270-degree rotations
+- [x] 2.5 Swap reported width/height for odd quarter-turn rotations (Drive reports
+      `rotation` as 0-3, not degrees; fixed after real files showed `rotation: 1`)
 - [x] 2.6 Return a clear HTTP 502 with the upstream message when Drive fails
 - [x] 2.7 Add a short server-side cache so `/api/manifest` does not hit Drive on
       every request (60s TTL in `drive.ts`, in-flight requests shared, failures not
@@ -78,16 +79,18 @@ Where an item was verified on the real device, the evidence is noted.
 
 ## 7. Google and deployment setup — requires the account owner
 
-- [ ] 7.1 Create the GCP project and enable the Drive API
-- [ ] 7.2 Create the service account and download its JSON key
-- [ ] 7.3 Create the shared Drive folder and **share it with the service account's
+- [x] 7.1 Create the GCP project and enable the Drive API
+- [x] 7.2 Create the service account and download its JSON key
+- [x] 7.3 Create the shared Drive folder and **share it with the service account's
       email** as Viewer — the step most often missed
 - [ ] 7.4 Add some photos, and set a few Drive descriptions to test captions
-- [ ] 7.5 Generate `FRAME_TOKEN` (`openssl rand -hex 32`) and choose `ADMIN_PASSWORD`
-- [ ] 7.6 Deploy the backend to Vercel and set its environment variables
-- [ ] 7.7 Provision Upstash Redis (`vercel integration add upstash`) so settings and
+      (3 items in Drive, but none has a description yet, so captions are untested)
+- [x] 7.5 Generate `FRAME_TOKEN` (`openssl rand -hex 32`) and choose `ADMIN_PASSWORD` (64-char token; `ADMIN_PASSWORD` kept, 9 chars)
+- [x] 7.6 Deploy the backend to Vercel and set its environment variables (https://photo-frame-sandy.vercel.app)
+- [x] 7.7 Provision Upstash Redis (`vercel integration add upstash`) so settings and (provisioned; persistence across cold start still to confirm, see deploy change 4.6)
       hidden photos survive restarts
 - [ ] 7.8 Rebuild the APK with the real `frameBaseUrl`/`frameToken` and reinstall
+      (built with the production values; not yet installed on the tablet)
 
 ## 8. End-to-end verification on the device
 
@@ -112,11 +115,14 @@ Where an item was verified on the real device, the evidence is noted.
 
 ## 9. Hardening and follow-ups
 
-- [ ] 9.1 Unit-test `Playlist` (no-repeat window, splice, removal, persistence) — it
+- [x] 9.1 Unit-test `Playlist` (no-repeat window, splice, removal, persistence) — it
       holds the only non-trivial logic and currently needs an interface extraction
       or Robolectric to be testable
+      (extracted `PlaylistStore`, 12 JVM tests; two deliberate breaks were caught)
 - [ ] 9.2 Record verified device facts in `docs/device-notes.md` (ROM, trust store
       result, `screencap` caveat, root-required Wi-Fi toggle, LAN address)
+      (partly done: `docs/device-notes.md` written; the Wi-Fi toggle and LAN address
+      are still unrecorded and need the tablet plugged in)
 - [ ] 9.3 Decide whether uncaptioned photos should show the capture date instead
 - [ ] 9.4 Tune the dwell time and sync interval after living with it for a week
 - [ ] 9.5 Consider a watchdog that restarts the activity if it dies while unattended
