@@ -1,5 +1,14 @@
 package com.fer.photoframe
 
+import kotlin.random.Random
+
+/** What [Playlist] persists; [Prefs] implements it, tests use an in-memory fake. */
+interface PlaylistStore {
+    var items: List<Item>
+    var queue: List<String>
+    var cursor: Int
+}
+
 /**
  * Shuffle with a no-repeat window: the queue is a permutation of the whole library,
  * walked start to finish before reshuffling, so nothing repeats until almost
@@ -8,7 +17,10 @@ package com.fer.photoframe
  * Newly added photos are spliced into the *remainder* of the current cycle rather
  * than appended, so an upload shows up within minutes instead of waiting a full pass.
  */
-class Playlist(private val prefs: Prefs) {
+class Playlist(
+    private val prefs: PlaylistStore,
+    private val random: Random = Random.Default,
+) {
 
     private var items: List<Item> = emptyList()
     private var queue: MutableList<String> = mutableListOf()
@@ -52,7 +64,7 @@ class Playlist(private val prefs: Prefs) {
             // Scatter the new ids randomly through the not-yet-played tail.
             val tailStart = (cursor + 1).coerceAtMost(queue.size)
             val tail = queue.subList(tailStart, queue.size)
-            val merged = (tail + added).shuffled()
+            val merged = (tail + added).shuffled(random)
             tail.clear()
             tail.addAll(merged)
         }
@@ -63,7 +75,7 @@ class Playlist(private val prefs: Prefs) {
     }
 
     private fun reshuffle() {
-        queue = items.map { it.id }.shuffled().toMutableList()
+        queue = items.map { it.id }.shuffled(random).toMutableList()
         cursor = 0
         persist()
     }

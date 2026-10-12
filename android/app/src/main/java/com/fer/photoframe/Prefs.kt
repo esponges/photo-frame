@@ -8,14 +8,14 @@ import org.json.JSONObject
  * Survives reboots so the frame resumes its shuffle rather than restarting it, and
  * so the last known manifest can drive playback before the network is up.
  */
-class Prefs(context: Context) {
+class Prefs(context: Context) : PlaylistStore {
     private val sp = context.getSharedPreferences("frame", Context.MODE_PRIVATE)
 
     var manifestVersion: String
         get() = sp.getString("version", "") ?: ""
         set(v) = sp.edit().putString("version", v).apply()
 
-    var queue: List<String>
+    override var queue: List<String>
         get() {
             val raw = sp.getString("queue", null) ?: return emptyList()
             val arr = JSONArray(raw)
@@ -23,12 +23,12 @@ class Prefs(context: Context) {
         }
         set(v) = sp.edit().putString("queue", JSONArray(v).toString()).apply()
 
-    var cursor: Int
+    override var cursor: Int
         get() = sp.getInt("cursor", 0)
         set(v) = sp.edit().putInt("cursor", v).apply()
 
     /** Cached item list, so a cold start with no network still has something to show. */
-    var items: List<Item>
+    override var items: List<Item>
         get() {
             val raw = sp.getString("items", null) ?: return emptyList()
             val arr = JSONArray(raw)
