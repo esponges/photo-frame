@@ -1,5 +1,6 @@
 import { JWT } from "google-auth-library";
 import { env } from "./env";
+import { fixtureFile, fixtureItems, fixtureMode } from "./fixtures";
 import type { Item, ItemKind } from "./types";
 
 const DRIVE = "https://www.googleapis.com/drive/v3";
@@ -80,10 +81,44 @@ const parentClause = (ids: string[]) =>
   ids.map((id) => `'${id}' in parents`).join(" or ");
 
 /**
+ * The Drive listing is the expensive call (two or more round-trips), and the
+ * manifest route runs it on every poll even when answering 304. A short cache
+ * keeps extra pollers (a second frame, an uptime monitor) from multiplying it.
+ *
+ * Module scope only lives as long as one warm serverless instance, so this is
+ * best-effort on Vercel: it bounds Drive calls per instance, not globally.
+ */
+const LIST_TTL_MS = 60_000;
+let listCache: { at: number; items: Item[] } | null = null;
+let listInflight: Promise<Item[]> | null = null;
+
+/** Drop the cached listing, e.g. when the owner asks for a resync. */
+export function invalidateMediaCache(): void {
+  listCache = null;
+}
+
+/**
  * Lists photos and videos in the configured folder, recursing one level into
  * subfolders so the library can be organised by trip or year.
  */
 export async function listMedia(): Promise<Item[]> {
+  if (fixtureMode()) return fixtureItems();
+  if (listCache && Date.now() - listCache.at < LIST_TTL_MS) return listCache.items;
+
+  // Share one in-flight request between concurrent callers. Failures are never
+  // cached, so a transient Drive error does not stick for a minute.
+  listInflight ??= fetchMediaList()
+    .then((items) => {
+      listCache = { at: Date.now(), items };
+      return items;
+    })
+    .finally(() => {
+      listInflight = null;
+    });
+  return listInflight;
+}
+
+async function fetchMediaList(): Promise<Item[]> {
   const root = env.folderId;
 
   const folders = await listAll(
@@ -138,6 +173,7 @@ function normalizeExifTime(t?: string): string | null {
 
 /** Raw bytes of a Drive file. `range` is forwarded for video seeking. */
 export async function fetchFile(id: string, range?: string | null): Promise<Response> {
+  if (fixtureMode()) return fixtureFile(id, range);
   const url = new URL(`${DRIVE}/files/${id}`);
   url.searchParams.set("alt", "media");
   const headers: Record<string, string> = { Authorization: await authHeader() };

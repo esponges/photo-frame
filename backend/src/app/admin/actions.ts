@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { isAdmin, login } from "@/lib/auth";
+import { invalidateMediaCache } from "@/lib/drive";
 import { store } from "@/lib/store";
 import type { Settings } from "@/lib/types";
 
@@ -22,6 +23,8 @@ export async function doSkip() {
 
 export async function doResync() {
   await assertAdmin();
+  // A manual resync usually follows adding photos in Drive; don't serve the cached list.
+  invalidateMediaCache();
   await store().pushCommand({ type: "resync" });
   revalidatePath("/admin");
 }

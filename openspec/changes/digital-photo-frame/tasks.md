@@ -17,8 +17,9 @@ Where an item was verified on the real device, the evidence is noted.
 - [x] 2.4 Normalise Drive's `2019:03:04 18:12:33` EXIF time into ISO 8601
 - [x] 2.5 Swap reported width/height for 90/270-degree rotations
 - [x] 2.6 Return a clear HTTP 502 with the upstream message when Drive fails
-- [ ] 2.7 Add a short server-side cache so `/api/manifest` does not hit Drive on
-      every request (acceptable for one tablet today; needed if anything else polls)
+- [x] 2.7 Add a short server-side cache so `/api/manifest` does not hit Drive on
+      every request (60s TTL in `drive.ts`, in-flight requests shared, failures not
+      cached, dropped on admin Resync; per warm instance on Vercel, not global)
 
 ## 3. Backend — media delivery
 
@@ -90,9 +91,11 @@ Where an item was verified on the real device, the evidence is noted.
 
 ## 8. End-to-end verification on the device
 
-- [ ] 8.1 Optional, unblocks testing before any GCP work: add a backend fixture mode
+- [x] 8.1 Optional, unblocks testing before any GCP work: add a backend fixture mode
       serving generated images, reach it with `adb reverse tcp:3000 tcp:3000`, and
       allow cleartext to localhost in the network security config
+      (`FIXTURE_MODE=1`; debug-only `src/debug` network config; server side verified
+      by curl, EXIF-6 output confirmed upright. Not yet run on the tablet)
 - [ ] 8.2 Confirm a real photo displays full-screen, correctly oriented
 - [ ] 8.3 Confirm a landscape photo letterboxes with the blurred backdrop behind it
 - [ ] 8.4 Confirm the caption comes from the Drive description and the date is correct

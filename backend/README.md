@@ -43,6 +43,22 @@ and settings reset on restart. For production:
 - <http://localhost:3000/admin> — the phone admin page
 - `curl -H "Authorization: Bearer $FRAME_TOKEN" localhost:3000/api/manifest | jq`
 
+### Fixture mode: test the frame without Google
+
+`FIXTURE_MODE=1` replaces Drive with generated test media: a portrait stored
+sideways with EXIF orientation 6, a landscape, a square with no caption, a panorama,
+and (if present) H.264 and HEVC clips. Only `FRAME_TOKEN` and `ADMIN_PASSWORD` are needed.
+
+    scripts/make-fixture-videos.sh            # once; writes backend/.fixtures/
+    FIXTURE_MODE=1 pnpm dev
+    adb reverse tcp:3000 tcp:3000             # tablet's localhost:3000 -> this Mac
+    cd ../android && ./gradlew :app:assembleDebug \
+        -PframeBaseUrl=http://127.0.0.1:3000 -PframeToken=$FRAME_TOKEN
+
+The debug build (only) allows cleartext to `127.0.0.1`/`localhost`; release stays
+HTTPS-only. Fixture mode never touches Drive, so it cannot prove the service-account
+sharing, TLS to the deployed backend, or real-world EXIF.
+
 ## Endpoints
 
 | Route | Auth | Purpose |
