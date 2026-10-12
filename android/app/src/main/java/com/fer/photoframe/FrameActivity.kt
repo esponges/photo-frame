@@ -245,8 +245,12 @@ class FrameActivity : AppCompatActivity() {
 
     private suspend fun refreshManifest() {
         val manifest = app.api.manifest() ?: return
+        // The poll loop only reschedules when its incoming settings differ from
+        // `settings`, so a change absorbed here must reschedule itself.
+        val settingsChanged = manifest.settings != settings
         settings = manifest.settings
         app.prefs.settings = manifest.settings
+        if (settingsChanged) Schedule.apply(this, manifest.settings)
         if (manifest.version != app.prefs.manifestVersion) {
             app.prefs.manifestVersion = manifest.version
             playlist.update(manifest.items)

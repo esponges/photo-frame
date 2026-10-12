@@ -120,10 +120,9 @@ Where an item was verified on the real device, the evidence is noted.
       holds the only non-trivial logic and currently needs an interface extraction
       or Robolectric to be testable
       (extracted `PlaylistStore`, 12 JVM tests; two deliberate breaks were caught)
-- [ ] 9.2 Record verified device facts in `docs/device-notes.md` (ROM, trust store
+- [x] 9.2 Record verified device facts in `docs/device-notes.md` (ROM, trust store
       result, `screencap` caveat, root-required Wi-Fi toggle, LAN address)
-      (partly done: `docs/device-notes.md` written; the Wi-Fi toggle and LAN address
-      are still unrecorded and need the tablet plugged in)
+      (`docs/device-notes.md`, including the root-required Wi-Fi toggle and LAN address)
 - [ ] 9.3 Decide whether uncaptioned photos should show the capture date instead
 - [ ] 9.4 Tune the dwell time and sync interval after living with it for a week
 - [ ] 9.5 Consider a watchdog that restarts the activity if it dies while unattended

@@ -28,8 +28,8 @@ Anything not yet verified is listed at the bottom rather than guessed.
   would be wrong when the screen is already off.
 - The clock is corrected by NTP once the tablet is on Wi-Fi, which the on/off hours depend on.
 
-## Not yet recorded
-Add these the next time the tablet is plugged in; they were on the task list but nothing
-in the repo evidences them:
-- Wi-Fi toggle: whether it needs root, and the command that works
-- The tablet's LAN address
+## Network
+- Wi-Fi toggle needs root: `adb shell svc wifi disable` as the shell user is killed
+  (exit 137) and Wi-Fi stays on. Use `adb shell 'su -c "svc wifi disable"'` (and `enable`).
+- LAN address seen on 2026-10-12: `192.168.100.13/24` on `wlan0` (DHCP, so it may change)
+- Battery on 2026-10-12: level 100, health 2 (good), 24.5C
